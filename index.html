@@ -32,22 +32,25 @@ var model;   // Contains the visible objects in the scene, but
 			 // rotated using the keyboard.
 
 // Nodes in the scene graphs that are modified as part of the animation:
-var sphereRotator;  // The sphere is a child of this object; rotating
+var cubeRotator, sphereRotator, sphereTwoRotator, diamondRotator;  // The sphere is a child of this object; rotating
                     // this object about the y-axis rotates the sphere.
 
 var animating = false;  // This is set to true when an animation is running.
+var animatingSphereOne = false;
+var animatingSphereTwo = false;
 
 
 /*  Create the scene graph.  This function is called once, as soon as the page loads.
  *  The renderer has already been created before this function is called.
  */
 function createWorld() {
-    renderer.setClearColor( 0x444444 );  // Set background color (0x444444 is dark gray).
+    renderer.setClearColor( 'skyblue' );  // Set background color
 	scene = new THREE.Scene();
 
-	// create a camera, sitting on the positive z-axis.  The camera is not part of the scene.
-	camera = new THREE.PerspectiveCamera(45, canvas.width/canvas.height, 1, 30);
+	// create a camera, sitting on the positive z-axis.
+	camera = new THREE.PerspectiveCamera(90, canvas.width/canvas.height, 1, 30);
 	camera.position.z = 15;
+	scene.add(camera); //The camera is part of the scene.
 
     // create some lights and add them to the scene.
 	scene.add( new THREE.DirectionalLight( 0xffffff, 0.4 ) ); // dim light shining from above
@@ -57,18 +60,31 @@ function createWorld() {
 
 	// create the model
 	model = new THREE.Object3D();
-	model.add( new THREE.Mesh(  // add a big cube at the origin; the cube is not animated
-	    new THREE.BoxGeometry(3,3,3),
-		new THREE.MeshLambertMaterial({ color: 0xff7700 })
-	));
-	model.add( new THREE.Mesh(  // A tall narrow cylinder on the axis of rotation
-        new THREE.CylinderGeometry(0.3,0.3,8),
+
+	//cube
+	var cube = new THREE.Mesh(  // add a big cube at the origin; the cube is not animated
+	    new THREE.BoxGeometry(2,2,2),
+		new THREE.MeshLambertMaterial({ color: 0x0000AA }),
+
+	);
+	cube.position.y = 6;
+	cubeRotator = new THREE.Object3D();
+	cubeRotator.add(cube);
+	model.add(cubeRotator);
+
+	//cylinder
+	var cylinder = new THREE.Mesh(  // A tall narrow cylinder on the axis of rotation
+        new THREE.CylinderGeometry(3,3,1),
 		new THREE.MeshLambertMaterial({ color: 0x0000AA })
-	));
+	);
+
+	model.add(cylinder);
+
+	//sphere 1
 	var sphere = new THREE.Mesh(
-	    new THREE.SphereGeometry(1,32,16),
+	    new THREE.SphereGeometry(.8,32,16),
 		new THREE.MeshPhongMaterial({
-		    color: "green",
+		    color: "0x0000AA",
 			specular: 0x101010,
 			shininess: 32
 		})
@@ -78,13 +94,53 @@ function createWorld() {
 	sphereRotator.add(sphere);
 	model.add(sphereRotator);
 
+	//sphere 2
+	var sphereTwo = new THREE.Mesh(
+		new THREE.SphereGeometry(.8,32,16),
+		new THREE.MeshPhongMaterial({
+			color: "0x0000AA",
+			specular: 0x101010,
+			shininess: 32
+		})
+	);
+	sphereTwo.position.y = -4;
+	sphereTwoRotator = new THREE.Object3D();
+	sphereTwoRotator.add(sphereTwo);
+	model.add(sphereTwoRotator);
+
+	var dod = new THREE.Mesh (
+		new THREE.DodecahedronGeometry(1,0),
+		new THREE.MeshPhongMaterial({ color: 0xffff00 })
+	);
+	dod.position.y = 11;
+	model.add(dod);
+
+	var torus = new THREE.Mesh(
+		new THREE.TorusGeometry(10, 1, 8, 100),
+		new THREE.MeshPhongMaterial({ color: 0xffff00 })
+	);
+
+	torus.position.y = -1;
+	model.add(torus);
+
+	//diamond
+	var diamond = new THREE.Mesh(
+		new THREE.OctahedronGeometry(2,0),
+		new THREE.MeshPhongMaterial({ color: 0xffff00 })
+	);
+	diamond.position.y = -15;
+	diamondRotator = new THREE.Object3D();
+	diamondRotator.add(diamond);
+	model.add(diamondRotator);
+
 	model.rotation.set(0.2,0,0); // Tip it forward a bit, so we're not looking at it edge-on.
 
-	scene.add(model);
+	scene.add(model); // This adds model to the scene
 
 	dlight = new THREE.DirectionalLight(0xff0000, 0.7);
 	dlight.position.set(1,0,0); // Look down the x-axis
 	scene.add(dlight);
+
 
 
 }
@@ -102,7 +158,20 @@ function render() {
  *  for that frame.
  */
 function updateForFrame() {
-    sphereRotator.rotation.y += 0.03;
+	if(animatingSphereOne) {
+		sphereRotator.rotation.y += 0.03;
+	}
+
+	if(animatingSphereTwo) {
+		sphereTwoRotator.rotation.x += 0.03;
+	}
+
+	if(animating) {
+	cubeRotator.rotation.y += 0.02;
+    //sphereRotator.rotation.y += 0.03;
+	//sphereTwoRotator.rotation.x += 0.03;
+	diamondRotator.rotation.y += 0.04;
+	}
 }
 
 
@@ -117,7 +186,7 @@ function doFrame() {
     if (animating) {
         updateForFrame();
         render();
-        requestAnimationFrame(doFrame); 
+        requestAnimationFrame(doFrame);
 	}
 }
 
@@ -134,6 +203,27 @@ function doAnimateCheckbox() {
 		}
 	}
 }
+
+/* Responds when the setting of the "Animate sphereOne" checkbox is changed.  This
+ * function will start or stop the animation, depending on its setting.
+ */
+function doSphereOneCheckbox() {
+	var animSphereOne = document.getElementById("animateSphereOne").checked;
+	if (animSphereOne != animatingSphereOne) {
+		animatingSphereOne = animSphereOne;
+}
+}
+
+/* Responds when the setting of the "Animate sphereTwo" checkbox is changed.  This
+ * function will start or stop the animation, depending on its setting.
+ */
+function doSphereTwoCheckbox() {
+	var animSphereTwo = document.getElementById("animateSphereTwo").checked;
+	if (animSphereTwo != animatingSphereTwo) {
+		animatingSphereTwo = animSphereTwo;
+}
+}
+
 
 
 
@@ -185,6 +275,10 @@ function init() {
 	document.addEventListener("keydown", doKey, false);
 	document.getElementById("animate").checked = false;
 	document.getElementById("animate").onchange = doAnimateCheckbox;
+	document.getElementById("animateSphereOne").checked = false;
+	document.getElementById("animateSphereOne").onchange = doSphereOneCheckbox;
+	document.getElementById("animateSphereTwo").checked = false;
+	document.getElementById("animateSphereTwo").onchange = doSphereTwoCheckbox;
 	createWorld();
 	render();
 }
@@ -197,7 +291,10 @@ function init() {
 
 <p><b>Use LeftArrow, UpArrow, DownArrow, and RightArrow keys to rotate the model.</b></p>
 
-<p><label><input type="checkbox" id="animate">Animate</label>
+<p>
+	<label><input type="checkbox" id="animate">Animate</label>
+	<label><input type="checkbox" id="animateSphereOne">Animate sphereOne</label>
+	<label><input type="checkbox" id="animateSphereTwo">Animate sphereTwo</label>
 </p>
 
 <div id="canvas-holder">
